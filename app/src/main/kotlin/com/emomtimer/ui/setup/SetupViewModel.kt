@@ -1,11 +1,18 @@
 package com.emomtimer.ui.setup
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.emomtimer.domain.model.Preset
+import com.emomtimer.domain.repository.PresetRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import java.util.UUID
 import javax.inject.Inject
 
 data class SetupUiState(
@@ -23,19 +30,61 @@ data class SetupUiState(
     val isValid: Boolean
         get() = totalDurationMillis > 0 && intervalMillis > 0
 
-    /** True when interval exceeds total — no beeps will fire. */
+    /** True when interval exceeds total — no interval events will fire. */
     val intervalExceedsTotal: Boolean
         get() = isValid && intervalMillis > totalDurationMillis
+
+    fun defaultPresetName(): String {
+        fun fmt(min: Int, sec: Int): String = when {
+            min > 0 && sec > 0 -> "${min}min ${sec}s"
+            min > 0 -> "${min}min"
+            else -> "${sec}s"
+        }
+        return "${fmt(totalMinutes, totalSeconds)} / ${fmt(intervalMinutes, intervalSeconds)}"
+    }
 }
 
 @HiltViewModel
-class SetupViewModel @Inject constructor() : ViewModel() {
+class SetupViewModel @Inject constructor(
+    private val presetRepository: PresetRepository,
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(SetupUiState())
     val uiState: StateFlow<SetupUiState> = _uiState.asStateFlow()
+
+    val presets: StateFlow<List<Preset>> = presetRepository.getPresets()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun setTotalMinutes(value: Int) = _uiState.update { it.copy(totalMinutes = value.coerceIn(0, 99)) }
     fun setTotalSeconds(value: Int) = _uiState.update { it.copy(totalSeconds = value.coerceIn(0, 59)) }
     fun setIntervalMinutes(value: Int) = _uiState.update { it.copy(intervalMinutes = value.coerceIn(0, 99)) }
     fun setIntervalSeconds(value: Int) = _uiState.update { it.copy(intervalSeconds = value.coerceIn(0, 59)) }
+
+    fun loadPreset(preset: Preset) {
+        _uiState.update {
+            it.copy(
+                totalMinutes = preset.totalMinutes,
+                totalSeconds = preset.totalSeconds,
+                intervalMinutes = preset.intervalMinutes,
+                intervalSeconds = preset.intervalSeconds,
+            )
+        }
+    }
+
+    fun savePreset(name: String) {
+        val state = _uiState.value
+        val preset = Preset(
+            id = UUID.randomUUID().toString(),
+            name = name.trim().ifEmpty { state.defaultPresetName() },
+            totalMinutes = state.totalMinutes,
+            totalSeconds = state.totalSeconds,
+            intervalMinutes = state.intervalMinutes,
+            intervalSeconds = state.intervalSeconds,
+        )
+        viewModelScope.launch { presetRepository.savePreset(preset) }
+    }
+
+    fun deletePreset(id: String) {
+        viewModelScope.launch { presetRepository.deletePreset(id) }
+    }
 }
