@@ -7,5 +7,7 @@ import kotlinx.coroutines.flow.SharedFlow
 interface TimerEngine {
     val events: SharedFlow<TimerEvent>
     fun start(config: TimerConfig)
+    fun pause()
+    fun resume()
     fun stop()
 }

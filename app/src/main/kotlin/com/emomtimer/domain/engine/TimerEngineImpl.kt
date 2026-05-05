@@ -16,8 +16,11 @@ import kotlin.math.ceil
  * Drift-free timer engine based on system clock anchoring.
  *
  * All interval boundaries are calculated as absolute timestamps from [startTime],
- * never by accumulating delays.  If the system is lagged, missed interval events
+ * never by accumulating delays. If the system is lagged, missed interval events
  * are emitted in one burst before the next delay is calculated.
+ *
+ * Pause/resume works by tracking total accumulated pause duration and subtracting
+ * it from the elapsed time, preserving drift-free behaviour across pauses.
  */
 class TimerEngineImpl(
     private val clock: Clock,
@@ -29,8 +32,17 @@ class TimerEngineImpl(
 
     private var job: Job? = null
 
+    // Volatile fields: written on the calling thread, read on the timer coroutine thread.
+    // @Volatile guarantees visibility; write ordering in pause()/resume() ensures correctness.
+    @Volatile private var isPaused = false
+    @Volatile private var pauseStartTime = 0L
+    @Volatile private var totalPausedMs = 0L
+
     override fun start(config: TimerConfig) {
         job?.cancel()
+        isPaused = false
+        pauseStartTime = 0L
+        totalPausedMs = 0L
         job = scope.launch {
             val startTime = clock.currentTimeMillis()
             val totalIntervals = ceil(
@@ -39,8 +51,14 @@ class TimerEngineImpl(
             var lastCompletedInterval = 0
 
             while (isActive) {
+                // Suspend cheaply while paused; re-check on every tick.
+                while (isPaused && isActive) {
+                    delay(PAUSE_CHECK_MS)
+                }
+                if (!isActive) break
+
                 val now = clock.currentTimeMillis()
-                val elapsed = now - startTime
+                val elapsed = now - startTime - totalPausedMs
 
                 val completedIntervals = (elapsed / config.intervalMillis).toInt()
 
@@ -53,11 +71,10 @@ class TimerEngineImpl(
 
                 if (elapsed >= config.totalDurationMillis) {
                     _events.emit(TimerEvent.WorkoutCompleted)
-                    break
+                    return@launch
                 }
 
-                // Countdown to the next interval boundary
-                val nextIntervalAt = startTime + (completedIntervals + 1) * config.intervalMillis
+                val nextIntervalAt = startTime + totalPausedMs + (completedIntervals + 1) * config.intervalMillis
                 val remainingInInterval = (nextIntervalAt - now).coerceAtLeast(0L)
 
                 _events.emit(
@@ -69,12 +86,28 @@ class TimerEngineImpl(
                     )
                 )
 
-                // Sleep until the sooner of: next interval boundary or next UI tick
+                val workoutEnd = startTime + totalPausedMs + config.totalDurationMillis
                 val nextUiTick = now + TICK_MS
-                val sleepUntil = minOf(nextIntervalAt, nextUiTick, startTime + config.totalDurationMillis)
+                val sleepUntil = minOf(nextIntervalAt, nextUiTick, workoutEnd)
                 val sleepMs = (sleepUntil - clock.currentTimeMillis()).coerceAtLeast(0L)
                 if (sleepMs > 0) delay(sleepMs)
             }
+        }
+    }
+
+    override fun pause() {
+        if (!isPaused) {
+            pauseStartTime = clock.currentTimeMillis()
+            isPaused = true
+        }
+    }
+
+    override fun resume() {
+        if (isPaused) {
+            // Update totalPausedMs BEFORE clearing isPaused so the timer loop
+            // sees the correct offset as soon as it exits the pause-check loop.
+            totalPausedMs += clock.currentTimeMillis() - pauseStartTime
+            isPaused = false
         }
     }
 
@@ -85,5 +118,6 @@ class TimerEngineImpl(
 
     private companion object {
         const val TICK_MS = 100L
+        const val PAUSE_CHECK_MS = 50L
     }
 }

@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class SessionStatus { Running, Stopped, Completed }
+enum class SessionStatus { Running, Paused, Stopped, Completed }
 
 data class SessionUiState(
     val status: SessionStatus = SessionStatus.Running,
@@ -93,6 +93,16 @@ class SessionViewModel @Inject constructor(
         if (settings.vibrationEnabled) {
             if (isCompletion) vibrationManager.vibrateCompletion() else vibrationManager.vibrateInterval()
         }
+    }
+
+    fun pauseSession() {
+        timerEngine.pause()
+        _uiState.update { it.copy(status = SessionStatus.Paused) }
+    }
+
+    fun resumeSession() {
+        timerEngine.resume()
+        _uiState.update { it.copy(status = SessionStatus.Running) }
     }
 
     fun stopSession() {

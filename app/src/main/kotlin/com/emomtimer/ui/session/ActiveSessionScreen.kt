@@ -3,13 +3,21 @@ package com.emomtimer.ui.session
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -36,6 +44,8 @@ fun ActiveSessionScreen(
             onSessionFinished()
         }
     }
+
+    val isPaused = state.status == SessionStatus.Paused
 
     Scaffold { padding ->
         Box(
@@ -69,9 +79,12 @@ fun ActiveSessionScreen(
                 // Countdown to next beep
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = "NEXT BEEP IN",
+                        text = if (isPaused) "⏸  PAUSED" else "NEXT BEEP IN",
                         style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (isPaused)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         text = state.remainingInIntervalMillis.formatCountdown(),
@@ -97,16 +110,52 @@ fun ActiveSessionScreen(
 
                 Spacer(Modifier.height(8.dp))
 
-                Button(
-                    onClick = viewModel::stopSession,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(72.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.error,
-                    ),
+                // Pause / Resume + Stop buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text("STOP", style = MaterialTheme.typography.titleLarge)
+                    Button(
+                        onClick = { if (isPaused) viewModel.resumeSession() else viewModel.pauseSession() },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(64.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (isPaused)
+                                MaterialTheme.colorScheme.primary
+                            else
+                                MaterialTheme.colorScheme.secondary,
+                        ),
+                    ) {
+                        Icon(
+                            if (isPaused) Icons.Default.PlayArrow else Icons.Default.Pause,
+                            contentDescription = if (isPaused) "Resume" else "Pause",
+                            modifier = Modifier.size(28.dp),
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            if (isPaused) "RESUME" else "PAUSE",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    }
+
+                    Button(
+                        onClick = viewModel::stopSession,
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(64.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.error,
+                        ),
+                    ) {
+                        Icon(
+                            Icons.Default.Stop,
+                            contentDescription = "Stop",
+                            modifier = Modifier.size(28.dp),
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("STOP", style = MaterialTheme.typography.titleMedium)
+                    }
                 }
             }
         }
