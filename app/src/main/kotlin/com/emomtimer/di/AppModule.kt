@@ -8,9 +8,11 @@ import com.emomtimer.core.Clock
 import com.emomtimer.core.SystemClock
 import com.emomtimer.data.audio.AudioPlayer
 import com.emomtimer.data.audio.ToneAudioPlayer
+import com.emomtimer.data.repository.PresetRepositoryImpl
 import com.emomtimer.data.repository.SettingsRepositoryImpl
 import com.emomtimer.domain.engine.DefaultTimerEngineFactory
 import com.emomtimer.domain.engine.TimerEngineFactory
+import com.emomtimer.domain.repository.PresetRepository
 import com.emomtimer.domain.repository.SettingsRepository
 import dagger.Binds
 import dagger.Module
@@ -29,6 +31,10 @@ abstract class AppModule {
     @Binds
     @Singleton
     abstract fun bindSettingsRepository(impl: SettingsRepositoryImpl): SettingsRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPresetRepository(impl: PresetRepositoryImpl): PresetRepository
 
     @Binds
     @Singleton
