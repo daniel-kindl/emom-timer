@@ -31,7 +31,7 @@ class VibrationManager @Inject constructor(
     }
 
     fun vibrateCompletion() {
-        val pattern = longArrayOf(0, 300, 150, 300)
+        val pattern = longArrayOf(0, COMPLETION_PULSE_MS, COMPLETION_PAUSE_MS, COMPLETION_PULSE_MS)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
         } else {
@@ -42,5 +42,7 @@ class VibrationManager @Inject constructor(
 
     private companion object {
         const val INTERVAL_DURATION_MS = 300L
+        const val COMPLETION_PULSE_MS = 300L
+        const val COMPLETION_PAUSE_MS = 150L
     }
 }
