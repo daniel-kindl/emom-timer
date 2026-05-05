@@ -1,0 +1,9 @@
+# Ensure shell scripts always use LF on all platforms
+gradlew        text eol=lf
+*.sh           text eol=lf
+
+# Windows scripts keep CRLF
+*.bat          text eol=crlf
+
+# All other text files use system line endings
+*              text=auto
