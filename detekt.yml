@@ -1,0 +1,33 @@
+config:
+  warningsAsErrors: false
+
+output-reports:
+  active: true
+
+complexity:
+  LongMethod:
+    threshold: 60
+    ignoreAnnotated: [ "Composable" ]
+  LongParameterList:
+    functionThreshold: 8
+    ignoreDefaultParameters: true
+  TooManyFunctions:
+    thresholdInFiles: 15
+    thresholdInClasses: 15
+    thresholdInInterfaces: 15
+    thresholdInObjects: 15
+    thresholdInEnums: 15
+
+naming:
+  FunctionNaming:
+    ignoreAnnotated: [ "Composable" ]
+
+style:
+  MagicNumber:
+    ignoreAnnotated: [ "Composable" ]
+    ignorePropertyDeclaration: true
+    ignoreNumbers: [ "-1", "0", "1", "2", "20", "59", "60", "99", "100", "1000", "5000" ]
+  ReturnCount:
+    max: 4
+  UnusedPrivateMember:
+    active: true
