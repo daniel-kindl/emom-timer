@@ -29,21 +29,10 @@ jobs:
         run: chmod +x gradlew
 
       - name: Run full test suite
-        run: ./gradlew testReleaseUnitTest --stacktrace
+        run: ./gradlew testDebugUnitTest --stacktrace
 
-      - name: Decode keystore
-        env:
-          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
-        run: |
-          echo "$KEYSTORE_BASE64" | base64 --decode > ${{ runner.temp }}/release.jks
-
-      - name: Build release APK
-        env:
-          KEYSTORE_FILE: ${{ runner.temp }}/release.jks
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew assembleRelease --stacktrace
+      - name: Build APK
+        run: ./gradlew assembleDebug --stacktrace
 
       - name: Extract version from tag
         id: version
@@ -73,6 +62,6 @@ jobs:
 
             ---
             **Full Changelog**: https://github.com/${{ github.repository }}/compare/${{ steps.version.outputs.VERSION }}...HEAD
-          files: app/build/outputs/apk/release/*.apk
+          files: app/build/outputs/apk/debug/*.apk
           draft: false
           prerelease: false
