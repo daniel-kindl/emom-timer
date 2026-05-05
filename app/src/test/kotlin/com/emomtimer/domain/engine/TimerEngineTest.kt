@@ -30,7 +30,7 @@ class TimerEngineTest {
 
     @Test
     fun `interval events fire at correct multiples`() = runTest {
-        val engine = TimerEngineImpl(Clock { currentTime }, this)
+        val engine = TimerEngineImpl(Clock { testScheduler.currentTime }, this)
         val events = mutableListOf<TimerEvent>()
         val job = launch { engine.events.toList(events) }
 
@@ -47,7 +47,7 @@ class TimerEngineTest {
 
     @Test
     fun `workout completes after total duration`() = runTest {
-        val engine = TimerEngineImpl(Clock { currentTime }, this)
+        val engine = TimerEngineImpl(Clock { testScheduler.currentTime }, this)
         val events = mutableListOf<TimerEvent>()
         val job = launch { engine.events.toList(events) }
 
@@ -62,7 +62,7 @@ class TimerEngineTest {
 
     @Test
     fun `no interval events when interval exceeds total duration`() = runTest {
-        val engine = TimerEngineImpl(Clock { currentTime }, this)
+        val engine = TimerEngineImpl(Clock { testScheduler.currentTime }, this)
         val events = mutableListOf<TimerEvent>()
         val job = launch { engine.events.toList(events) }
 
@@ -79,7 +79,7 @@ class TimerEngineTest {
 
     @Test
     fun `non-divisible duration fires only complete intervals`() = runTest {
-        val engine = TimerEngineImpl(Clock { currentTime }, this)
+        val engine = TimerEngineImpl(Clock { testScheduler.currentTime }, this)
         val events = mutableListOf<TimerEvent>()
         val job = launch { engine.events.toList(events) }
 
@@ -98,7 +98,7 @@ class TimerEngineTest {
 
     @Test
     fun `interval equals total duration fires one interval then completes`() = runTest {
-        val engine = TimerEngineImpl(Clock { currentTime }, this)
+        val engine = TimerEngineImpl(Clock { testScheduler.currentTime }, this)
         val events = mutableListOf<TimerEvent>()
         val job = launch { engine.events.toList(events) }
 
@@ -115,7 +115,7 @@ class TimerEngineTest {
 
     @Test
     fun `tick events carry increasing elapsed time`() = runTest {
-        val engine = TimerEngineImpl(Clock { currentTime }, this)
+        val engine = TimerEngineImpl(Clock { testScheduler.currentTime }, this)
         val events = mutableListOf<TimerEvent>()
         val job = launch { engine.events.toList(events) }
 
@@ -136,7 +136,7 @@ class TimerEngineTest {
 
     @Test
     fun `rapid stop then start does not emit events from previous run`() = runTest {
-        val engine = TimerEngineImpl(Clock { currentTime }, this)
+        val engine = TimerEngineImpl(Clock { testScheduler.currentTime }, this)
         val events = mutableListOf<TimerEvent>()
         val job = launch { engine.events.toList(events) }
 
@@ -160,7 +160,7 @@ class TimerEngineTest {
 
     @Test
     fun `totalIntervals is correctly computed in tick events`() = runTest {
-        val engine = TimerEngineImpl(Clock { currentTime }, this)
+        val engine = TimerEngineImpl(Clock { testScheduler.currentTime }, this)
         val events = mutableListOf<TimerEvent>()
         val job = launch { engine.events.toList(events) }
 
@@ -174,3 +174,4 @@ class TimerEngineTest {
         assertEquals("totalIntervals should be 4", 4, tick.totalIntervals)
     }
 }
+

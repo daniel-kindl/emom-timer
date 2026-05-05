@@ -1,6 +1,6 @@
 package com.emomtimer.core
 
-interface Clock {
+fun interface Clock {
     fun currentTimeMillis(): Long
 }
 
