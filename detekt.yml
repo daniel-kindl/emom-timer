@@ -1,0 +1,35 @@
+build-upon-default-config: true
+all-rules: false
+
+config:
+  # Treat violations as errors in CI
+  warningsAsErrors: false
+
+output-reports:
+  active: true
+
+complexity:
+  LongMethod:
+    threshold: 60
+  LongParameterList:
+    functionThreshold: 8
+    ignoreDefaultParameters: true
+  TooManyFunctions:
+    thresholdInClass: 15
+    thresholdInObject: 15
+
+naming:
+  FunctionNaming:
+    ignoreAnnotated: [ "Composable" ]
+
+style:
+  MagicNumber:
+    ignoreAnnotated: [ "Composable" ]
+    ignoreNumbers: [ "-1", "0", "1", "2", "100", "1000" ]
+  ReturnCount:
+    max: 4
+  UnusedPrivateMember:
+    active: true
+
+formatting:
+  active: false
