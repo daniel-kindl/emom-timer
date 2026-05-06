@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.emomtimer.data.audio.AudioPlayer
 import com.emomtimer.data.vibration.VibrationManager
 import com.emomtimer.domain.engine.TimerEngineFactory
+import com.emomtimer.domain.model.SessionStatus
 import com.emomtimer.domain.model.TimerConfig
 import com.emomtimer.domain.model.TimerEvent
 import com.emomtimer.domain.repository.SettingsRepository
@@ -17,8 +18,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-
-enum class SessionStatus { Running, Paused, Stopped, Completed }
 
 data class SessionUiState(
     val status: SessionStatus = SessionStatus.Running,
