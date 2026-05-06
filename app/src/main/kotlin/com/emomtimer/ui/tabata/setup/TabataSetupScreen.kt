@@ -1,4 +1,4 @@
-package com.emomtimer.ui.setup
+package com.emomtimer.ui.tabata.setup
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -31,22 +31,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.emomtimer.domain.model.Preset
+import com.emomtimer.domain.model.TabataPreset
 import com.emomtimer.ui.components.DurationPicker
 import com.emomtimer.ui.components.PresetsSection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SetupScreen(
-    onStartSession: (totalDurationMillis: Long, intervalMillis: Long) -> Unit,
+fun TabataSetupScreen(
+    onStartSession: (totalDurationMillis: Long, workMillis: Long, restMillis: Long) -> Unit,
     onNavigateUp: () -> Unit,
-    viewModel: SetupViewModel = hiltViewModel(),
+    viewModel: TabataSetupViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val presets by viewModel.presets.collectAsStateWithLifecycle()
     var showSaveDialog by rememberSaveable { mutableStateOf(false) }
     var dialogPresetName by rememberSaveable { mutableStateOf("") }
-    var presetToDelete by remember { mutableStateOf<Preset?>(null) }
+    var presetToDelete by remember { mutableStateOf<TabataPreset?>(null) }
 
     if (showSaveDialog) {
         AlertDialog(
@@ -96,7 +96,7 @@ fun SetupScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("EMOM") },
+                title = { Text("Tabata") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateUp) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -125,20 +125,22 @@ fun SetupScreen(
             HorizontalDivider()
 
             DurationPicker(
-                label = "Interval",
-                minutes = state.intervalMinutes,
-                seconds = state.intervalSeconds,
-                onMinutesChange = viewModel::setIntervalMinutes,
-                onSecondsChange = viewModel::setIntervalSeconds,
+                label = "Work",
+                minutes = state.workMinutes,
+                seconds = state.workSeconds,
+                onMinutesChange = viewModel::setWorkMinutes,
+                onSecondsChange = viewModel::setWorkSeconds,
             )
 
-            if (state.intervalExceedsTotal) {
-                Text(
-                    text = "⚠ Interval exceeds total duration — no beeps will fire.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.error,
-                )
-            }
+            HorizontalDivider()
+
+            DurationPicker(
+                label = "Rest",
+                minutes = state.restMinutes,
+                seconds = state.restSeconds,
+                onMinutesChange = viewModel::setRestMinutes,
+                onSecondsChange = viewModel::setRestSeconds,
+            )
 
             PresetsSection(
                 presets = presets,
@@ -155,7 +157,7 @@ fun SetupScreen(
 
             Button(
                 onClick = {
-                    onStartSession(state.totalDurationMillis, state.intervalMillis)
+                    onStartSession(state.totalDurationMillis, state.workMillis, state.restMillis)
                 },
                 enabled = state.isValid,
                 modifier = Modifier

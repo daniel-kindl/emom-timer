@@ -24,6 +24,16 @@ class ToneAudioPlayer @Inject constructor() : AudioPlayer {
         toneGenerator?.startTone(ToneGenerator.TONE_CDMA_ALERT_NETWORK_LITE, COMPLETION_DURATION_MS)
     }
 
+    override fun playWorkStartBeep() {
+        ensureGenerator()
+        toneGenerator?.startTone(ToneGenerator.TONE_CDMA_HIGH_SS, BEEP_DURATION_MS)
+    }
+
+    override fun playRestStartBeep() {
+        ensureGenerator()
+        toneGenerator?.startTone(ToneGenerator.TONE_CDMA_LOW_SS, BEEP_DURATION_MS)
+    }
+
     override fun release() {
         toneGenerator?.release()
         toneGenerator = null

@@ -1,4 +1,4 @@
-# EMOM Timer
+# DK Timer
 
 A minimal, production-quality Android workout interval timer — built for reliability during physical exercise.
 
@@ -10,11 +10,13 @@ A minimal, production-quality Android workout interval timer — built for relia
 
 | Feature | Detail |
 |---------|--------|
-| ⏱ Flexible timing | Set any total duration and interval length (mm:ss pickers) |
+| ⏱ EMOM timer | Set total duration and interval length (mm:ss drum-roll pickers) |
+| 🔁 Tabata timer | Set total, work, and rest durations; automatic phase alternation |
+| 🔴🟢 Phase colours | Full-screen red (work) / green (rest) background in Tabata sessions |
 | 🔔 Sound feedback | Beep at every interval — uses alarm stream, ignores silent mode |
 | 📳 Vibration feedback | Vibrates at every interval and on workout completion |
 | ⏸ Pause & resume | Pause mid-session without losing progress or drifting |
-| 💾 Presets | Save, name, and load your favourite interval configurations |
+| 💾 Presets | Save, name, and load your favourite configurations for both timers |
 | 🖥 Workout-first UI | Large high-contrast display, screen stays on, one-hand friendly |
 | 🔇 Toggleable feedback | Sound and vibration each independently on/off |
 
@@ -67,26 +69,35 @@ Or set environment variables `KEYSTORE_FILE`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, 
 
 ## Usage
 
-### Running a workout
+### Starting a timer
 
-1. Launch the app
-2. Set **Total Duration** (e.g. `20:00`)
-3. Set **Interval** (e.g. `01:00`)
-4. Tap **START**
-5. The app beeps + vibrates at every interval boundary
-6. Tap **PAUSE** to freeze the timer mid-session; tap **RESUME** to continue
-7. Tap **STOP** at any time to end the session early
+1. Launch the app — you'll see the **DK Timer** home screen
+2. Tap **EMOM** or **Tabata** to open that timer's setup screen
+
+### EMOM
+
+1. Set **Total Duration** and **Interval** using the drum-roll pickers
+2. Tap **START** — the app beeps + vibrates at every interval boundary
+3. Tap **PAUSE** to freeze mid-session; tap **RESUME** to continue
+4. Tap **STOP** at any time to end early
+
+### Tabata
+
+1. Set **Total Duration**, **Work Time**, and **Rest Time**
+2. Tap **START** — phases alternate automatically with distinct high/low beeps
+3. Background turns red during work phases, green during rest
+4. Tap **PAUSE** / **RESUME** to freeze and continue; tap **STOP** to end early
 
 ### Presets
 
-- Tap **Save** in the Presets section on the setup screen to save the current configuration
-- A name is auto-generated (e.g. `20min / 1min`) — edit it in the dialog if you prefer
-- Tap any preset chip to instantly load those values into the pickers
+- Tap **Save** in the Presets row on either setup screen to save the current config
+- A name is auto-generated — edit it in the dialog if you prefer
+- Tap any preset chip to instantly load those values
 - Tap ✕ on a chip and confirm to delete a preset
 
 ### Settings
 
-Tap the gear icon (⚙) on the setup screen to toggle sound or vibration independently.
+Tap the gear icon ⚙ on the **home screen** to toggle sound or vibration independently.
 
 ---
 
@@ -96,21 +107,29 @@ Tap the gear icon (⚙) on the setup screen to toggle sound or vibration indepen
 app/src/main/kotlin/com/emomtimer/
 ├── core/               Clock interface (injectable for deterministic tests)
 ├── domain/
-│   ├── model/          TimerConfig, TimerEvent, UserSettings, Preset
-│   ├── engine/         TimerEngine interface + drift-free impl (pause-safe)
-│   └── repository/     SettingsRepository, PresetRepository interfaces
+│   ├── model/          TimerConfig, TimerEvent, SessionStatus, Preset
+│   │                   TabataConfig, TabataEvent, TabataPreset
+│   ├── engine/         AbstractPausableEngine (base), TimerEngine + impl,
+│   │                   TabataEngine + impl + factory
+│   └── repository/     SettingsRepository, PresetRepository,
+│                       TabataPresetRepository interfaces
 ├── data/
 │   ├── audio/          AudioPlayer (ToneGenerator / STREAM_ALARM)
 │   ├── vibration/      VibrationManager
-│   └── repository/     SettingsRepositoryImpl, PresetRepositoryImpl (DataStore)
+│   └── repository/     SettingsRepositoryImpl, PresetRepositoryImpl,
+│                       TabataPresetRepositoryImpl (DataStore)
 ├── di/                 Hilt AppModule
 └── ui/
     ├── navigation/     AppNavigation (Compose Nav)
-    ├── setup/          SetupScreen + ViewModel  (pickers, presets)
+    ├── home/           HomeScreen (timer type selection + settings entry)
+    ├── setup/          SetupScreen + ViewModel  (EMOM pickers, presets)
     ├── session/        ActiveSessionScreen + ViewModel  (timer display, pause/stop)
+    ├── tabata/
+    │   ├── setup/      TabataSetupScreen + ViewModel
+    │   └── session/    TabataSessionScreen + ViewModel
     ├── settings/       SettingsScreen + ViewModel
-    ├── components/     DurationPicker
-    └── theme/          Material 3 theme
+    ├── components/     DurationPicker, WheelPicker, PresetsSection
+    └── theme/          Material 3 theme (complete 15-slot typography)
 ```
 
 ### Timer engine

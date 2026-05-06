@@ -1,14 +1,15 @@
-package com.emomtimer.ui.session
+package com.emomtimer.ui.tabata.session
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.emomtimer.data.audio.AudioPlayer
 import com.emomtimer.data.vibration.VibrationManager
-import com.emomtimer.domain.engine.TimerEngineFactory
+import com.emomtimer.domain.engine.TabataEngineFactory
 import com.emomtimer.domain.model.SessionStatus
-import com.emomtimer.domain.model.TimerConfig
-import com.emomtimer.domain.model.TimerEvent
+import com.emomtimer.domain.model.TabataConfig
+import com.emomtimer.domain.model.TabataEvent
+import com.emomtimer.domain.model.TabataPhase
 import com.emomtimer.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,64 +20,67 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-data class SessionUiState(
+data class TabataSessionUiState(
     val status: SessionStatus = SessionStatus.Running,
-    val currentRound: Int = 1,
-    val totalRounds: Int = 0,
+    val phase: TabataPhase = TabataPhase.Work,
+    val remainingInPhaseMillis: Long = 0L,
     val elapsedMillis: Long = 0L,
-    val remainingInIntervalMillis: Long = 0L,
     val totalDurationMillis: Long = 0L,
 )
 
 @HiltViewModel
-class SessionViewModel @Inject constructor(
-    private val timerEngineFactory: TimerEngineFactory,
+class TabataSessionViewModel @Inject constructor(
+    private val engineFactory: TabataEngineFactory,
     private val settingsRepository: SettingsRepository,
     private val audioPlayer: AudioPlayer,
     private val vibrationManager: VibrationManager,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
-    private val totalDurationMillis: Long =
-        checkNotNull(savedStateHandle["totalDurationMillis"])
-    private val intervalMillis: Long =
-        checkNotNull(savedStateHandle["intervalMillis"])
+    private val totalDurationMillis: Long = checkNotNull(savedStateHandle["totalDurationMillis"])
+    private val workMillis: Long = checkNotNull(savedStateHandle["workMillis"])
+    private val restMillis: Long = checkNotNull(savedStateHandle["restMillis"])
 
-    private val timerEngine = timerEngineFactory.create(viewModelScope)
+    private val engine = engineFactory.create(viewModelScope)
 
     private val _uiState = MutableStateFlow(
-        SessionUiState(totalDurationMillis = totalDurationMillis)
+        TabataSessionUiState(totalDurationMillis = totalDurationMillis)
     )
-    val uiState: StateFlow<SessionUiState> = _uiState.asStateFlow()
+    val uiState: StateFlow<TabataSessionUiState> = _uiState.asStateFlow()
 
     init {
         observeEvents()
-        timerEngine.start(
-            TimerConfig(
-                intervalMillis = intervalMillis,
-                totalDurationMillis = totalDurationMillis,
-            )
-        )
+        engine.start(TabataConfig(workMillis, restMillis, totalDurationMillis))
     }
 
     private fun observeEvents() {
         viewModelScope.launch {
-            timerEngine.events.collect { event ->
+            engine.events.collect { event ->
                 when (event) {
-                    is TimerEvent.Tick -> _uiState.update {
+                    is TabataEvent.Tick -> _uiState.update {
                         it.copy(
                             status = SessionStatus.Running,
+                            phase = event.phase,
+                            remainingInPhaseMillis = event.remainingInPhaseMillis,
                             elapsedMillis = event.elapsedMillis,
-                            remainingInIntervalMillis = event.remainingInInterval,
-                            currentRound = event.currentInterval,
-                            totalRounds = event.totalIntervals,
                         )
                     }
 
-                    is TimerEvent.IntervalCompleted -> triggerFeedback(isCompletion = false)
+                    is TabataEvent.WorkStarted -> triggerFeedback(
+                        isCompletion = false,
+                        playSound = { audioPlayer.playWorkStartBeep() },
+                    )
 
-                    is TimerEvent.WorkoutCompleted -> {
-                        triggerFeedback(isCompletion = true)
+                    is TabataEvent.RestStarted -> triggerFeedback(
+                        isCompletion = false,
+                        playSound = { audioPlayer.playRestStartBeep() },
+                    )
+
+                    is TabataEvent.WorkoutCompleted -> {
+                        triggerFeedback(
+                            isCompletion = true,
+                            playSound = { audioPlayer.playCompletionSound() },
+                        )
                         _uiState.update { it.copy(status = SessionStatus.Completed) }
                     }
                 }
@@ -84,34 +88,32 @@ class SessionViewModel @Inject constructor(
         }
     }
 
-    private suspend fun triggerFeedback(isCompletion: Boolean) {
+    private suspend fun triggerFeedback(isCompletion: Boolean, playSound: () -> Unit) {
         val settings = settingsRepository.getSettings().first()
-        if (settings.soundEnabled) {
-            if (isCompletion) audioPlayer.playCompletionSound() else audioPlayer.playIntervalBeep()
-        }
+        if (settings.soundEnabled) playSound()
         if (settings.vibrationEnabled) {
             if (isCompletion) vibrationManager.vibrateCompletion() else vibrationManager.vibrateInterval()
         }
     }
 
     fun pauseSession() {
-        timerEngine.pause()
+        engine.pause()
         _uiState.update { it.copy(status = SessionStatus.Paused) }
     }
 
     fun resumeSession() {
-        timerEngine.resume()
+        engine.resume()
         _uiState.update { it.copy(status = SessionStatus.Running) }
     }
 
     fun stopSession() {
-        timerEngine.stop()
+        engine.stop()
         _uiState.update { it.copy(status = SessionStatus.Stopped) }
     }
 
     override fun onCleared() {
         super.onCleared()
-        timerEngine.stop()
+        engine.stop()
         audioPlayer.release()
     }
 }

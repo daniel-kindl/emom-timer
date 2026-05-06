@@ -10,10 +10,14 @@ import com.emomtimer.data.audio.AudioPlayer
 import com.emomtimer.data.audio.ToneAudioPlayer
 import com.emomtimer.data.repository.PresetRepositoryImpl
 import com.emomtimer.data.repository.SettingsRepositoryImpl
+import com.emomtimer.data.repository.TabataPresetRepositoryImpl
+import com.emomtimer.domain.engine.DefaultTabataEngineFactory
 import com.emomtimer.domain.engine.DefaultTimerEngineFactory
+import com.emomtimer.domain.engine.TabataEngineFactory
 import com.emomtimer.domain.engine.TimerEngineFactory
 import com.emomtimer.domain.repository.PresetRepository
 import com.emomtimer.domain.repository.SettingsRepository
+import com.emomtimer.domain.repository.TabataPresetRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -38,6 +42,10 @@ abstract class AppModule {
 
     @Binds
     @Singleton
+    abstract fun bindTabataPresetRepository(impl: TabataPresetRepositoryImpl): TabataPresetRepository
+
+    @Binds
+    @Singleton
     abstract fun bindAudioPlayer(impl: ToneAudioPlayer): AudioPlayer
 
     companion object {
@@ -50,6 +58,11 @@ abstract class AppModule {
         @Singleton
         fun provideTimerEngineFactory(clock: Clock): TimerEngineFactory =
             DefaultTimerEngineFactory(clock)
+
+        @Provides
+        @Singleton
+        fun provideTabataEngineFactory(clock: Clock): TabataEngineFactory =
+            DefaultTabataEngineFactory(clock)
 
         @Provides
         @Singleton
