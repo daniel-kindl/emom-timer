@@ -68,7 +68,7 @@ fun SettingsScreen(
                 headlineContent = { Text("Sound") },
                 supportingContent = {
                     Text(
-                        "Play beep at each interval (uses alarm audio stream, ignores silent mode)",
+                        "Play a beep at each timer event (uses alarm audio stream, ignores silent mode)",
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 },
@@ -84,7 +84,7 @@ fun SettingsScreen(
                 headlineContent = { Text("Vibration") },
                 supportingContent = {
                     Text(
-                        "Vibrate at each interval and on workout completion",
+                        "Vibrate at each timer event and on workout completion",
                         style = MaterialTheme.typography.bodyMedium,
                     )
                 },
